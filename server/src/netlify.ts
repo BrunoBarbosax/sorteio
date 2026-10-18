@@ -8,6 +8,9 @@
  *
  * Banco de dados: obrigatoriamente PostgreSQL (SQLite nao persiste na Netlify).
  */
+// Precisa ser o primeiro import: aplica os padroes de ambiente ANTES de
+// qualquer modulo (app/env/db) avaliar `env`.
+import './netlify-env';
 import serverless from 'serverless-http';
 import bcrypt from 'bcryptjs';
 import { createApp } from './app';
