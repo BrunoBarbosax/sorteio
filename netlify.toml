@@ -18,6 +18,13 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  NODE_ENV = "production"
+  DB_CLIENT = "postgres"
+  TRUST_PROXY = "1"
+  PUBLIC_ORIGIN = "https://gorjeta77.netlify.app"
+  ADMIN_NAME = "Administrador"
+  # Segredos (DATABASE_URL, ADMIN_EMAIL, ADMIN_PASSWORD) ficam no painel:
+  # Site configuration > Environment variables
 
 [functions]
   # Leva as migracoes (.sql) junto do pacote da funcao.
