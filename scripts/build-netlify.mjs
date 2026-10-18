@@ -25,7 +25,29 @@ const esbuildOut = path.join(out, 'netlify', 'functions', 'api.mjs');
 console.log('1/4  Compilando o frontend (web)...');
 execSync('npm run build', { cwd: path.join(root, 'web'), stdio: 'inherit' });
 
-console.log('2/4  Empacotando a API em uma funcao unica (esbuild)...');
+console.log('2/4  Embutindo as migracoes (.sql) no bundle + empacotando a API...');
+// O pacote da funcao na Netlify so inclui netlify/functions/**; por isso as
+// migracoes viram um modulo TS gerado e entram DENTRO do bundle da funcao.
+const migDir = path.join(root, 'server', 'migrations');
+const migFiles = fs
+  .readdirSync(migDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort();
+fs.writeFileSync(
+  path.join(root, 'server', 'src', 'netlify-migrations.generated.ts'),
+  [
+    '// Gerado automaticamente por scripts/build-netlify.mjs — NAO EDITE A MAO.',
+    '// As migracoes ficam embutidas no bundle da funcao Netlify (arquivos .sql',
+    '// soltos nao sao empacotados junto da funcao em deploys manuais).',
+    'export const NETLIFY_MIGRATIONS: Array<{ name: string; sql: string }> = [',
+    ...migFiles.map(
+      (f) =>
+        `  { name: ${JSON.stringify(f)}, sql: ${JSON.stringify(fs.readFileSync(path.join(migDir, f), 'utf8'))} },`,
+    ),
+    '];',
+    '',
+  ].join('\n'),
+);
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'netlify', 'functions'), { recursive: true });
 await esbuild.build({
@@ -50,11 +72,6 @@ await esbuild.build({
     ].join('\n'),
   },
   logLevel: 'info',
-});
-
-console.log('2b/4  Copiando as migracoes (.sql) junto da funcao...');
-fs.cpSync(path.join(root, 'server', 'migrations'), path.join(out, 'server-migrations'), {
-  recursive: true,
 });
 
 console.log('3/4  Copiando o site estatico...');

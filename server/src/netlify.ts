@@ -8,8 +8,6 @@
  *
  * Banco de dados: obrigatoriamente PostgreSQL (SQLite nao persiste na Netlify).
  */
-import fs from 'node:fs';
-import path from 'node:path';
 import serverless from 'serverless-http';
 import bcrypt from 'bcryptjs';
 import { createApp } from './app';
@@ -17,6 +15,7 @@ import { createDb, type Db } from './db';
 import { migrate } from './db/migrate';
 import { env } from './env';
 import { newId, nowIso } from './lib/ids';
+import { NETLIFY_MIGRATIONS } from './netlify-migrations.generated';
 
 interface NetlifyEvent {
   path?: string;
@@ -38,32 +37,12 @@ function normalizePath(raw: string | undefined): string {
 
 type NetlifyHandler = (event: NetlifyEvent, context: unknown) => Promise<unknown>;
 
-/**
- * Localiza a pasta de migracoes (.sql): na Netlify ela e copiada para a raiz
- * do deploy (`server-migrations/`); localmente fica em `server/migrations`.
- */
-function resolveMigrationsDir(): string {
-  const candidates = [
-    // deploy manual: pasta netlify-dist arrastada na Netlify
-    path.resolve(__dirname, '../../server-migrations'),
-    // build via Git: included_files preserva a pasta do repositorio
-    path.resolve(__dirname, '../../netlify-dist/server-migrations'),
-    path.resolve(__dirname, '../../migrations'),
-    path.resolve(process.cwd(), 'migrations'),
-    path.resolve(process.cwd(), 'server', 'migrations'),
-    path.resolve(process.cwd(), 'netlify-dist', 'server-migrations'),
-  ];
-  for (const dir of candidates) {
-    if (fs.existsSync(dir)) return dir;
-  }
-  throw new Error('Pasta de migracoes (migrations/*.sql) nao encontrada.');
-}
-
 let appReady: Promise<NetlifyHandler> | null = null;
 
 async function bootstrap(): Promise<NetlifyHandler> {
   const db: Db = createDb();
-  const applied = await migrate(db, resolveMigrationsDir());
+  // Migracoes embutidas no bundle (geradas por scripts/build-netlify.mjs).
+  const applied = await migrate(db, undefined, NETLIFY_MIGRATIONS);
   if (applied.length) console.log('[netlify] migracoes aplicadas:', applied.join(', '));
 
   // Administrador inicial: criado uma unica vez, na primeira invocacao.
