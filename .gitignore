@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+data/
+server/data/
+web/dist/
+server/dist/
+coverage/
+.DS_Store
+
+# artefatos de build da Netlify (gerados por "npm run netlify:build")
+netlify-dist/
+netlify-dist.zip

@@ -1,0 +1,778 @@
+/* ============================================================
+   GORJETA 77 LUKAS - Apresentacao do sorteio (DrawShow)
+   Overlay de tela cheia com 5 fases. Prefixo obrigatorio: .ds-*
+   ============================================================ */
+
+.ds-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--text);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1400px 800px at 50% -10%, #2a0510 0%, #0d0406 45%, var(--bg-0) 100%),
+    var(--bg-0);
+}
+
+/* ------------------------- tematicas (vermelho/preto) ------------------------- */
+
+.ds-theme-classic {
+  --ds-a: #ff2d3f;
+  --ds-b: #ffd9dd;
+  --ds-c: #8b0f1a;
+  --ds-glow: rgba(255, 45, 63, 0.62);
+  --ds-beam: rgba(255, 45, 63, 0.12);
+}
+
+.ds-theme-neon {
+  --ds-a: #ff3b5c;
+  --ds-b: #ff9ad5;
+  --ds-c: #b3126a;
+  --ds-glow: rgba(255, 59, 92, 0.72);
+  --ds-beam: rgba(255, 59, 92, 0.16);
+}
+
+.ds-theme-gala {
+  --ds-a: #ff6a3d;
+  --ds-b: #ffe4d1;
+  --ds-c: #a3260f;
+  --ds-glow: rgba(255, 106, 61, 0.6);
+  --ds-beam: rgba(255, 106, 61, 0.14);
+}
+
+/* ------------------------- camadas de fundo ------------------------- */
+
+.ds-particles {
+  opacity: 0.9;
+  z-index: 0;
+}
+
+.ds-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(2, 4, 10, 0.82) 100%);
+}
+
+/* luzes varrendo o fundo */
+.ds-sweep {
+  position: absolute;
+  inset: -25%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ds-sweep::before,
+.ds-sweep::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -45%;
+  width: 34%;
+  height: 160%;
+  background: linear-gradient(100deg, transparent 0%, var(--ds-beam) 50%, transparent 100%);
+  filter: blur(26px);
+  animation: ds-sweep 7.5s linear infinite;
+}
+
+.ds-sweep::after {
+  animation-delay: -3.75s;
+}
+
+@keyframes ds-sweep {
+  to {
+    transform: translateX(430%);
+  }
+}
+
+/* palco central (tremor controlado via JS) */
+.ds-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  will-change: transform;
+}
+
+/* impacto do raio: tremor curto e seco na tela inteira */
+.ds-stage-shake {
+  animation: ds-strike-shake 0.62s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes ds-strike-shake {
+  10% {
+    transform: translate3d(-11px, 5px, 0);
+  }
+  25% {
+    transform: translate3d(9px, -6px, 0);
+  }
+  45% {
+    transform: translate3d(-7px, 4px, 0);
+  }
+  65% {
+    transform: translate3d(5px, -3px, 0);
+  }
+  85% {
+    transform: translate3d(-2px, 1px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-stage-shake {
+    animation: none;
+  }
+}
+
+.ds-stage > section {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: min(1400px, 96vw);
+  max-height: 100%;
+  padding: 24px 12px 72px;
+  box-sizing: border-box;
+}
+
+/* ------------------------- FASE 1 - abertura ------------------------- */
+
+.ds-intro {
+  gap: 6px;
+}
+
+.ds-intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 4.4rem);
+  font-weight: 700;
+  margin: 18px 0 4px;
+  color: var(--text);
+  text-shadow: 0 0 34px var(--ds-glow);
+  animation: ds-cine-in 1.5s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes ds-cine-in {
+  from {
+    opacity: 0;
+    filter: blur(26px);
+    transform: scale(1.4);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.ds-kicker {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.4vw, 1.6rem);
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  color: var(--ds-a);
+  margin: 8px 0 0;
+  animation: fade-up 1s ease 0.5s both;
+}
+
+.ds-sub {
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 4px 0 0;
+  animation: fade-up 1s ease 1s both, pulse-gold 2.4s ease-in-out 1.6s infinite;
+}
+
+/* ------------------------- FASE 2 - reel / suspense ------------------------- */
+
+.ds-reel {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(0, 3.4fr) minmax(130px, 1fr);
+  gap: clamp(10px, 2.5vw, 36px);
+  align-items: center;
+}
+
+.ds-marquee {
+  height: min(62vh, 560px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(7, 13, 28, 0.55);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+}
+
+.ds-marquee-track {
+  display: flex;
+  flex-direction: column;
+  animation: ds-marquee-up 26s linear infinite;
+  will-change: transform;
+}
+
+.ds-marquee-right .ds-marquee-track {
+  animation-name: ds-marquee-down;
+}
+
+.ds-marquee-item {
+  display: block;
+  padding: 9px 10px;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px dashed rgba(255, 92, 110, 0.16);
+}
+
+@keyframes ds-marquee-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes ds-marquee-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.ds-reel-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(18px, 3vw, 40px);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: rgba(6, 11, 24, 0.72);
+  box-shadow: var(--shadow-gold), inset 0 0 70px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.ds-reel-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  text-transform: uppercase;
+  color: var(--ds-a);
+  margin: 0;
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+.ds-reel-name {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  filter: blur(var(--ds-blur, 0));
+  text-shadow:
+    0 0 22px var(--ds-glow),
+    0 0 70px var(--ds-glow);
+}
+
+.ds-reel-id {
+  font-size: clamp(0.9rem, 1.6vw, 1.3rem);
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  color: var(--ds-b);
+  opacity: 0.85;
+}
+
+.ds-digital {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 7px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(4, 6, 13, 0.7);
+}
+
+.ds-digital-text {
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  color: var(--muted-2);
+}
+
+.ds-digital-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ds-a);
+  box-shadow: 0 0 10px var(--ds-a);
+  animation: ds-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes ds-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* ------------------------- FASE 3 - contagem ------------------------- */
+
+.ds-count {
+  gap: 4px;
+}
+
+.ds-count-label {
+  font-size: clamp(0.8rem, 1.8vw, 1.1rem);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.ds-count-num {
+  font-family: var(--font-display);
+  font-size: clamp(6rem, 30vw, 17rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ds-a);
+  text-shadow:
+    0 0 40px var(--ds-glow),
+    0 0 130px var(--ds-glow);
+  animation: ds-count-pop 0.9s cubic-bezier(0.2, 0.9, 0.2, 1) both, ds-shake 0.4s ease-out both;
+}
+
+@keyframes ds-count-pop {
+  from {
+    opacity: 0;
+    transform: scale(2.1);
+    filter: blur(18px);
+  }
+  40% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0.92;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes ds-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-7px, 3px, 0);
+  }
+  40% {
+    transform: translate3d(6px, -4px, 0);
+  }
+  60% {
+    transform: translate3d(-4px, 2px, 0);
+  }
+  80% {
+    transform: translate3d(3px, -2px, 0);
+  }
+}
+
+/* ------------------------- FASE 4 - revelacao ------------------------- */
+
+.ds-reveal {
+  gap: 10px;
+}
+
+.ds-suspense {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 6vw, 4rem);
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  color: var(--ds-b);
+  text-shadow: 0 0 30px var(--ds-glow);
+  margin: 0;
+  animation: ds-suspense 1.6s ease-in-out infinite;
+}
+
+@keyframes ds-suspense {
+  50% {
+    opacity: 0.45;
+    letter-spacing: 0.32em;
+  }
+}
+
+.ds-winner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  animation: ds-winner-in 0.8s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes ds-winner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+    filter: blur(22px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.ds-winner-kicker {
+  font-size: clamp(0.8rem, 2vw, 1.2rem);
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  text-transform: uppercase;
+  color: var(--ds-a);
+  margin: 0;
+}
+
+.ds-winner-name {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 900;
+  line-height: 1.04;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  background: linear-gradient(180deg, #fffdf5 0%, var(--ds-b) 45%, var(--ds-a) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 26px var(--ds-glow));
+}
+
+.ds-winner-id {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+/* ------------------------- confete ------------------------- */
+
+.ds-confetti {
+  position: absolute;
+  inset: -12vh 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ds-confetti-piece {
+  position: absolute;
+  top: -14%;
+  display: block;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation-name: ds-confetti-fall;
+  animation-timing-function: cubic-bezier(0.35, 0.1, 0.65, 1);
+  animation-fill-mode: both;
+}
+
+.ds-confetti-final .ds-confetti-piece {
+  animation-iteration-count: infinite;
+}
+
+@keyframes ds-confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(30px, 108vh, 0) rotate(680deg);
+    opacity: 0.7;
+  }
+}
+
+/* ------------------------- FASE 5 - tela final ------------------------- */
+
+.ds-final {
+  position: relative;
+  gap: 4px;
+  overflow-y: auto;
+  padding-top: clamp(28px, 6vh, 70px) !important;
+}
+
+.ds-final-kicker {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 3.2rem);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--ds-a);
+  text-shadow: 0 0 30px var(--ds-glow);
+  margin: 10px 0 0;
+  animation: ds-count-pop 1s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.ds-final-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3.6vw, 2.6rem);
+  color: var(--text);
+  margin: 2px 0 0;
+}
+
+.ds-final-date {
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin: 2px 0 18px;
+}
+
+.ds-final-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 12px;
+  width: min(1040px, 94%);
+  position: relative;
+  z-index: 5;
+}
+
+.ds-win-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(6, 11, 24, 0.82);
+  box-shadow: var(--shadow-soft);
+  animation: fade-up 0.6s ease both;
+}
+
+.ds-win-pos {
+  font-size: 0.68rem;
+  letter-spacing: 0.34em;
+  color: var(--ds-a);
+}
+
+.ds-win-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ds-win-id {
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  color: var(--muted-2);
+}
+
+.ds-final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 24px;
+  position: relative;
+  z-index: 5;
+}
+
+/* ------------------------- flash de luz ------------------------- */
+
+.ds-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.35) 32%, transparent 62%);
+  animation: ds-flash 0.6s ease-out both, ds-shake 0.35s ease-out both;
+}
+
+@keyframes ds-flash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* variante suave usada durante o reel (sem tremor) */
+.ds-flash-soft {
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgba(255, 255, 255, 0.45) 0%,
+    var(--ds-glow) 28%,
+    transparent 64%
+  );
+  animation-name: ds-flash-soft, none;
+  animation-duration: 1.3s, 1s;
+}
+
+@keyframes ds-flash-soft {
+  0% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------- barra de progresso ------------------------- */
+
+.ds-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 62;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ds-progress-fill {
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--ds-progress, 0));
+  background: linear-gradient(90deg, var(--ds-c), var(--ds-a), var(--ds-b));
+  box-shadow: 0 0 14px var(--ds-glow);
+}
+
+/* ------------------------- barra de controle ------------------------- */
+
+.ds-controls {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 70;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100vw - 28px);
+}
+
+.ds-controls .btn {
+  backdrop-filter: blur(6px);
+  background: rgba(4, 6, 13, 0.72);
+}
+
+/* anuncio acessivel (visivel apenas para leitores de tela) */
+.ds-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------- responsivo ------------------------- */
+
+@media (max-width: 860px) {
+  .ds-reel {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .ds-marquee {
+    display: none;
+  }
+
+  .ds-reel-center {
+    padding: 18px 14px;
+  }
+
+  .ds-reel-name {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .ds-stage > section {
+    padding: 18px 10px 92px;
+  }
+
+  .ds-final-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-controls {
+    left: 14px;
+    right: 14px;
+    justify-content: center;
+  }
+}
+
+/* ------------------------- acessibilidade: movimento reduzido ------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-flash,
+  .ds-count-num,
+  .ds-suspense,
+  .ds-final-kicker,
+  .ds-winner,
+  .ds-intro-title {
+    animation: none !important;
+    filter: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .ds-flash {
+    display: none;
+  }
+
+  .ds-sweep::before,
+  .ds-sweep::after {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .ds-marquee-track {
+    animation-duration: 160s;
+  }
+
+  .ds-confetti {
+    display: none;
+  }
+
+  .ds-reel-name {
+    filter: none !important;
+  }
+}

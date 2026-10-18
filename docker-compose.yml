@@ -1,0 +1,45 @@
+# ============================================================
+# GORJETA 77 LUKAS - subir banco PostgreSQL + aplicacao local
+# Uso:  docker compose up --build
+# ============================================================
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gorjeta
+      POSTGRES_PASSWORD: troque-esta-senha
+      POSTGRES_DB: gorjeta77
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gorjeta -d gorjeta77']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_CLIENT: postgres
+      DATABASE_URL: postgres://gorjeta:troque-esta-senha@db:5432/gorjeta77
+      TRUST_PROXY: '1'
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:4000}
+    ports:
+      - '4000:4000'
+    volumes:
+      # backup leve de um eventual fallback sqlite (nao usado em postgres)
+      - appdata:/app/server/data
+
+volumes:
+  pgdata:
+  appdata:

@@ -1,0 +1,29 @@
+# ============================================================
+# GORJETA 77 LUKAS - Build automatico na Netlify via GitHub
+#
+# fluxo:  git push  ->  Netlify roda "npm run netlify:ci"
+#         ->  gera netlify-dist/ (site + funcao + migracoes)
+#         ->  publica e atualiza o site
+#
+# Apos conectar o repositorio no Netlify, configure as variaveis
+# de ambiente (Site configuration > Environment variables):
+#   DATABASE_URL, DB_CLIENT=postgres, NODE_ENV=production,
+#   TRUST_PROXY=1, PUBLIC_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD
+# ============================================================
+
+[build]
+  command = "npm run netlify:ci"
+  publish = "netlify-dist"
+  functions = "netlify-dist/netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  # Leva as migracoes (.sql) junto do pacote da funcao.
+  included_files = ["netlify-dist/server-migrations/**"]
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

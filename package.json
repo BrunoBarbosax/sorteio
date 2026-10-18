@@ -1,0 +1,26 @@
+{
+  "name": "gorjeta-77-lukas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gorjeta 77 Lukas - sistema publico de cadastro e sorteios com animacao cinematografica",
+  "scripts": {
+    "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:web": "npm run dev --prefix web",
+    "install:all": "npm install --prefix server && npm install --prefix web",
+    "build": "npm run build --prefix server && npm run build --prefix web",
+    "start": "npm start --prefix server",
+    "test": "npm test --prefix server",
+    "db:migrate": "npm run db:migrate --prefix server",
+    "admin:create": "npm run admin:create --prefix server",
+    "netlify:build": "node scripts/build-netlify.mjs",
+    "netlify:ci": "npm install --prefix server --no-audit --no-fund && npm install --prefix web --no-audit --no-fund && npm run netlify:build"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2"
+  }
+}
