@@ -1,4 +1,22 @@
-import { DatabaseSync } from 'node:sqlite';
+// O driver SQLite (node:sqlite) e carregado de forma LAZY: em ambientes
+// serverless (Netlify) apenas o PostgreSQL e usado, e um import estatico de
+// node:sqlite quebrava o carregamento do bundle da funcao.
+type SqliteStatement = {
+  all(...params: unknown[]): unknown[];
+  get(...params: unknown[]): unknown;
+  run(...params: unknown[]): { changes: bigint | number };
+};
+type SqliteDatabase = {
+  prepare(sql: string): SqliteStatement;
+  exec(sql: string): void;
+  close(): void;
+};
+type SqliteModule = { DatabaseSync: new (path: string) => SqliteDatabase };
+
+function loadSqliteDatabase(filePath: string): SqliteDatabase {
+  const sqlite = require('node:sqlite') as SqliteModule;
+  return new sqlite.DatabaseSync(filePath);
+}
 import fs from 'node:fs';
 import path from 'node:path';
 import { Pool, type PoolClient } from 'pg';
@@ -37,15 +55,15 @@ function normalizeParams(params: unknown[] | undefined): unknown[] {
 
 class SqliteDb implements Db {
   readonly dialect = 'sqlite' as const;
-  private db: DatabaseSync;
-  private stmts = new Map<string, ReturnType<DatabaseSync['prepare']>>();
+  private db: SqliteDatabase;
+  private stmts = new Map<string, SqliteStatement>();
   private mutex: Promise<unknown> = Promise.resolve();
 
   constructor(filePath: string) {
     if (filePath !== ':memory:') {
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
     }
-    this.db = new DatabaseSync(filePath);
+    this.db = loadSqliteDatabase(filePath);
     this.db.exec('PRAGMA journal_mode = WAL;');
     this.db.exec('PRAGMA foreign_keys = ON;');
     this.db.exec('PRAGMA busy_timeout = 5000;');
