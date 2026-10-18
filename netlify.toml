@@ -26,10 +26,6 @@
   # Segredos (DATABASE_URL, ADMIN_EMAIL, ADMIN_PASSWORD) ficam no painel:
   # Site configuration > Environment variables
 
-[functions]
-  # Leva as migracoes (.sql) junto do pacote da funcao.
-  included_files = ["netlify-dist/server-migrations/**"]
-
 [[headers]]
   for = "/assets/*"
   [headers.values]
