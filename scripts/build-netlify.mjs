@@ -20,7 +20,6 @@ import * as esbuild from 'esbuild';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'netlify-dist');
-const esbuildOut = path.join(out, 'netlify', 'functions', 'api.mjs');
 
 console.log('1/4  Compilando o frontend (web)...');
 execSync('npm run build', { cwd: path.join(root, 'web'), stdio: 'inherit' });
@@ -55,22 +54,13 @@ await esbuild.build({
   bundle: true,
   platform: 'node',
   target: 'node20',
-  format: 'esm',
+  // CommonJS de proposito: e o formato nativo das funcoes Netlify. Um bundle
+  // ESM seria re-convertido para CJS pela plataforma, e essa conversao derruba
+  // `import.meta.url` (quebra createRequire/__dirname do banner).
+  format: 'cjs',
   minify: true,
-  outfile: esbuildOut,
+  outfile: path.join(out, 'netlify', 'functions', 'api.js'),
   external: ['pg-native'],
-  // Pacotes CommonJS dentro do bundle ESM continuam usando require() dinamico,
-  // e o codigo do servidor usa __dirname (resolvido aqui para o arquivo da funcao).
-  banner: {
-    js: [
-      "import { createRequire as __cr } from 'node:module';",
-      "import { fileURLToPath as __ftp } from 'node:url';",
-      "import { dirname as __dp } from 'node:path';",
-      'const require = __cr(import.meta.url);',
-      'const __filename = __ftp(import.meta.url);',
-      'const __dirname = __dp(__filename);',
-    ].join('\n'),
-  },
   logLevel: 'info',
 });
 
